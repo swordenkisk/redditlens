@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>RedditLens — Market Intelligence Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow+Condensed:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%23ff6b35'/><text y='22' x='9' font-size='16' font-weight='900' fill='white'>RL</text></svg>"/>
+</head>
+<body>
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <div class="logo-r">R</div>
+    <div><span class="logo-name">Reddit</span><span class="logo-lens">Lens</span></div>
+    <span class="nav-tag">v2.0</span>
+  </a>
+  <div class="nav-links">
+    <a href="/" class="nl active">Dashboard</a>
+    <a href="/post" class="nl">Post Analysis</a>
+    <a href="/scan" class="nl">Subreddit Scan</a>
+    <a href="/batch" class="nl">Batch Scan</a>
+    <a href="/reports" class="nl">Reports</a>
+    <a href="/discover" class="nl">Discover</a>
+    <a href="/trends" class="nl">Trends</a>
+    <a href="/persona" class="nl">Persona</a>
+    <a href="https://github.com/swordenkisk/redditlens" class="nl nl-gh" target="_blank">GitHub 🇩🇿</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-eyebrow">Reddit Market Intelligence · No API Key Required</div>
+  <h1 class="hero-title">
+    Find <span class="hero-accent">Million-Dollar</span><br/>
+    Opportunities Hidden<br/>
+    in Reddit Communities
+  </h1>
+  <p class="hero-sub">
+    Any Reddit URL + /.json = full conversation data. Feed it through our signal engine to detect
+    pain points, willingness-to-pay, market gaps, and buying intent — automatically.
+  </p>
+
+  <div class="input-strip">
+    <span class="input-strip-pre">reddit.com/r/</span>
+    <input class="main-input" id="hero-sub" placeholder="smallbusiness, SaaS, startups, digitalnomad..." onkeydown="if(event.key==='Enter')quickScan()"/>
+    <button class="go-btn" onclick="quickScan()">Scan →</button>
+  </div>
+  <div class="quick-tabs">
+    <span class="qt" onclick="setHeroSub('smallbusiness')">r/smallbusiness</span>
+    <span class="qt" onclick="setHeroSub('SaaS')">r/SaaS</span>
+    <span class="qt" onclick="setHeroSub('startups')">r/startups</span>
+    <span class="qt" onclick="setHeroSub('Entrepreneur')">r/Entrepreneur</span>
+    <span class="qt" onclick="setHeroSub('freelance')">r/freelance</span>
+    <span class="qt" onclick="setHeroSub('digitalnomad')">r/digitalnomad</span>
+    <span class="qt" onclick="setHeroSub('webdev')">r/webdev</span>
+    <span class="qt" onclick="setHeroSub('marketing')">r/marketing</span>
+  </div>
+</section>
+
+<div class="stats-bar">
+  <div class="sb"><div class="sv" id="stat-reports">{{ total }}</div><div class="sl">Reports Generated</div></div>
+  <div class="sb"><div class="sv">20</div><div class="sl">Signal Patterns</div></div>
+  <div class="sb"><div class="sv">FREE</div><div class="sl">No API Key Needed</div></div>
+  <div class="sb">
+    <div class="sv">
+      <span class="llm-badge {{ 'llm-on' if llm_ready else 'llm-off' }}">
+        {{ '● AI ON' if llm_ready else '○ AI OFF' }}
+      </span>
+    </div>
+    <div class="sl">LLM Enhancement</div>
+  </div>
+</div>
+
+<!-- LLM setup banner -->
+{% if not llm_ready %}
+<div style="background:rgba(255,107,53,.06);border-bottom:1px solid rgba(255,107,53,.15);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+  <span style="font-size:12px;color:var(--t2)">💡 Add an OpenAI API key to enable deep AI analysis of each opportunity</span>
+  <button class="btn btn-acc btn-sm" onclick="document.getElementById('llm-panel').classList.toggle('hidden')">Configure AI →</button>
+</div>
+<div class="hidden" id="llm-panel" style="background:var(--bg2);border-bottom:1px solid var(--b2);padding:20px 24px">
+  <div style="display:flex;gap:12px;max-width:700px;flex-wrap:wrap;align-items:flex-end">
+    <div style="flex:1;min-width:180px">
+      <label class="form-label">API Key</label>
+      <input class="form-input" id="llm-key" type="password" placeholder="sk-..."/>
+    </div>
+    <div style="flex:1;min-width:180px">
+      <label class="form-label">Base URL (optional – for Awrass/custom)</label>
+      <input class="form-input" id="llm-url" placeholder="https://api.openai.com"/>
+    </div>
+    <div style="min-width:140px">
+      <label class="form-label">Model</label>
+      <select class="form-select" id="llm-model">
+        <option value="gpt-4o-mini">gpt-4o-mini</option>
+        <option value="gpt-4o">gpt-4o</option>
+        <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+        <option value="deepseek-chat">deepseek-chat</option>
+      </select>
+    </div>
+    <button class="btn btn-acc" onclick="saveLLM()">Save & Enable</button>
+  </div>
+</div>
+{% endif %}
+
+<!-- Top opportunities -->
+{% if top_opps %}
+<section class="sec">
+  <div class="sec-hdr">
+    <span class="sec-title">🔥 Top Opportunities Found</span>
+    <a href="/reports" class="sec-link">View All Reports →</a>
+  </div>
+  <div class="opp-grid">
+    {% for opp in top_opps %}
+    {% set score = opp.opportunity_score %}
+    {% set col = '#ff4d6d' if score >= 60 else ('#ff9b47' if score >= 30 else '#4a5a6a') %}
+    <div class="opp-card" style="--score-color:{{ col }}">
+      <div class="opp-top">
+        <div>
+          <div class="opp-sub">r/{{ opp.subreddit }}</div>
+          <div class="opp-title">{{ opp.post_title[:80] }}</div>
+        </div>
+        <div class="opp-score">{{ opp.opportunity_score | int }}</div>
+      </div>
+      <div class="opp-meta">
+        <span>👍 {{ opp.score }}</span>
+        <span>💬 {{ opp.num_comments }}</span>
+        <span>📡 {{ opp.signal_count }} signals</span>
+      </div>
+      <div class="opp-summary">{{ opp.summary }}</div>
+      <div class="opp-signals">
+        {% for pp in opp.pain_points[:2] %}
+        <span class="sig-chip sig-pain">💔 pain</span>
+        {% endfor %}
+        {% for w in opp.wtp_signals[:1] %}
+        <span class="sig-chip sig-wtp">💰 WTP</span>
+        {% endfor %}
+        {% for g in opp.gaps[:1] %}
+        <span class="sig-chip sig-gap">🔍 gap</span>
+        {% endfor %}
+      </div>
+      <div class="opp-actions">
+        <a href="/report/{{ opp.id }}" class="btn btn-ghost btn-sm">Details</a>
+        <a href="{{ opp.url }}" target="_blank" class="btn btn-ghost btn-sm">Reddit ↗</a>
+        <a href="/api/export/{{ opp.id }}/md" class="btn btn-ghost btn-sm">Export</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% else %}
+<section class="sec">
+  <div style="text-align:center;padding:60px 20px">
+    <div style="font-size:48px;margin-bottom:16px">🔍</div>
+    <div style="font-family:var(--sans);font-size:22px;font-weight:700;margin-bottom:8px">Ready to Find Opportunities</div>
+    <p style="color:var(--t2);max-width:440px;margin:0 auto 24px;line-height:1.7;font-size:13px">Enter a subreddit above or use the tools below to start scanning Reddit for hidden market signals.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <a href="/post" class="btn btn-acc btn-lg">Analyze a Post</a>
+      <a href="/scan" class="btn btn-teal btn-lg">Scan a Subreddit</a>
+      <a href="/batch" class="btn btn-ghost btn-lg">Batch Scan</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- How it works -->
+<section class="sec" style="background:var(--bg2);border-top:1px solid var(--b1)">
+  <div class="sec-hdr"><span class="sec-title">⚡ How It Works</span></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--b1);border:1px solid var(--b1)">
+    <div style="background:var(--bg2);padding:22px">
+      <div style="font-size:22px;margin-bottom:10px">01</div>
+      <div style="font-family:var(--sans);font-weight:700;font-size:16px;margin-bottom:8px">Reddit → JSON</div>
+      <div style="font-size:12px;color:var(--t2);line-height:1.7">Any Reddit URL + <code>/.json</code> returns the full thread: all comments, upvotes, metadata. No API key, no scraping.</div>
+    </div>
+    <div style="background:var(--bg2);padding:22px">
+      <div style="font-size:22px;margin-bottom:10px">02</div>
+      <div style="font-family:var(--sans);font-weight:700;font-size:16px;margin-bottom:8px">Signal Detection</div>
+      <div style="font-size:12px;color:var(--t2);line-height:1.7">Our engine runs 20 pattern categories across every sentence: pain points, WTP, market gaps, urgency, competitor mentions.</div>
+    </div>
+    <div style="background:var(--bg2);padding:22px">
+      <div style="font-size:22px;margin-bottom:10px">03</div>
+      <div style="font-family:var(--sans);font-weight:700;font-size:16px;margin-bottom:8px">Opportunity Score</div>
+      <div style="font-size:12px;color:var(--t2);line-height:1.7">Posts are ranked 0–100 by a composite score: signal density × engagement × WTP indicators × urgency weight.</div>
+    </div>
+    <div style="background:var(--bg2);padding:22px">
+      <div style="font-size:22px;margin-bottom:10px">04</div>
+      <div style="font-family:var(--sans);font-weight:700;font-size:16px;margin-bottom:8px">AI Enhancement</div>
+      <div style="font-size:12px;color:var(--t2);line-height:1.7">Optionally connect any OpenAI-compatible API for product ideas, customer persona, monetization suggestions.</div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-brand">
+    <div class="logo-r" style="width:20px;height:20px;font-size:11px">R</div>
+    RedditLens · Market Intelligence
+    <span style="color:var(--t4)">by swordenkisk 🇩🇿</span>
+  </div>
+  <div class="footer-links">
+    <a href="/health">Health</a>
+    <a href="/api/reports">API</a>
+    <a href="https://github.com/swordenkisk/redditlens" target="_blank">GitHub</a>
+  </div>
+  <div class="footer-note">Uses Reddit's public JSON API · No data stored permanently</div>
+</footer>
+
+<div class="toast" id="toast"></div>
+<script src="/static/js/app.js"></script>
+<script>
+function setHeroSub(s) { document.getElementById('hero-sub').value = s; }
+function quickScan() {
+  const s = document.getElementById('hero-sub').value.trim().replace(/^r\//,'');
+  if (s) window.location = `/scan?sub=${encodeURIComponent(s)}`;
+}
+async function saveLLM() {
+  const r = await fetch('/api/configure/llm', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      api_key: document.getElementById('llm-key').value,
+      base_url: document.getElementById('llm-url').value,
+      model: document.getElementById('llm-model').value,
+    })
+  });
+  const d = await r.json();
+  showToast(d.llm_enabled ? '✅ AI enabled!' : '⚠ Key empty');
+  if (d.llm_enabled) setTimeout(()=>location.reload(),1000);
+}
+</script>
+</body>
+</html>

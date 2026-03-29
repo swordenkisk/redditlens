@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Trend Analysis — RedditLens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow+Condensed:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body><nav class="nav">
+  <a href="/" class="nav-logo"><div class="logo-r">R</div><div><span class="logo-name">Reddit</span><span class="logo-lens">Lens</span></div></a>
+  <div class="nav-links">
+    <a href="/" class="nl">Dashboard</a>
+    <a href="/post" class="nl">Post Analysis</a>
+    <a href="/scan" class="nl">Scan</a>
+    <a href="/batch" class="nl">Batch</a>
+    <a href="/reports" class="nl">Reports</a>
+    <a href="/discover" class="nl">Discover</a>
+    <a href="/trends" class="nl">Trends</a>
+    <a href="/persona" class="nl">Persona</a>
+    <a href="https://github.com/swordenkisk/redditlens" class="nl nl-gh" target="_blank">GitHub 🇩🇿</a>
+  </div>
+</nav>
+<section class="hero" style="padding:44px 24px 32px">
+  <div class="hero-eyebrow">Cross-Subreddit Trend Analysis</div>
+  <h1 class="hero-title" style="font-size:clamp(28px,4vw,52px)">What Are They <span class="hero-accent">Really</span> Talking About?</h1>
+  <p class="hero-sub" style="margin-bottom:0">Analyze keyword frequency, signal patterns, and competitor mentions across multiple subreddits simultaneously.</p>
+</section>
+
+<section class="sec">
+  <div style="max-width:680px">
+    <div class="form-block">
+      <label class="form-label">Subreddits to analyze (one per line)</label>
+      <textarea class="form-textarea" id="trend-subs" rows="4" placeholder="SaaS&#10;startups&#10;Entrepreneur&#10;smallbusiness"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-block">
+        <label class="form-label">Sort</label>
+        <select class="form-select" id="trend-sort">
+          <option value="hot">Hot</option><option value="top">Top</option><option value="new">New</option>
+        </select>
+      </div>
+      <div class="form-block">
+        <label class="form-label">Posts per subreddit</label>
+        <select class="form-select" id="trend-limit">
+          <option value="10">10</option><option value="20" selected>20</option><option value="30">30</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-block">
+      <label class="form-label">Optional: focus query</label>
+      <input class="form-input" id="trend-query" placeholder="e.g. pricing, automation, customer support..."/>
+    </div>
+    <button class="btn btn-acc btn-lg" id="trend-btn" onclick="runTrends()">📊 Analyze Trends</button>
+    <div class="hidden" id="trend-loading" style="margin-top:14px">
+      <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--t2)"><span class="spinner"></span> Fetching and analyzing posts...</div>
+    </div>
+  </div>
+
+  <div class="hidden fade" id="trend-results" style="margin-top:32px"></div>
+</section>
+
+<script>
+async function runTrends() {
+  const subs  = document.getElementById('trend-subs').value.split('
+').map(s=>s.trim().replace(/^r\//,'')).filter(Boolean);
+  const sort  = document.getElementById('trend-sort').value;
+  const limit = document.getElementById('trend-limit').value;
+  const query = document.getElementById('trend-query').value.trim();
+  if (!subs.length) { showToast('Enter at least one subreddit'); return; }
+
+  const btn = document.getElementById('trend-btn');
+  btn.disabled = true; btn.textContent = '⏳ Analyzing...';
+  document.getElementById('trend-loading').classList.remove('hidden');
+  document.getElementById('trend-results').classList.add('hidden');
+
+  try {
+    const r = await fetch('/api/trends', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({subreddits:subs, sort, limit:+limit, query})
+    });
+    const d = await r.json();
+    if (d.error) { showToast('Error: '+d.error); return; }
+
+    const sig_html = Object.entries(d.signal_breakdown||{}).sort((a,b)=>b[1]-a[1])
+      .map(([cat,cnt]) => {
+        const colors = {pain:'var(--pain)',wtp:'var(--wtp)',gap:'var(--gap)',need:'var(--need)',urgency:'var(--urgency)',competitor:'var(--comp)'};
+        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--b1)">
+          <span class="sig-chip sig-${cat}">${cat}</span>
+          <div style="flex:1;height:6px;background:var(--bg4);border-radius:3px;overflow:hidden">
+            <div style="height:100%;background:${colors[cat]||'var(--t3)'};width:${Math.min(cnt*5,100)}%;border-radius:3px"></div>
+          </div>
+          <span style="font-size:11px;color:var(--t3);min-width:20px">${cnt}</span>
+        </div>`;
+      }).join('');
+
+    const kw_html = (d.top_keywords||[]).slice(0,20).map(([k,v]) =>
+      `<span class="kw-pill">${k} <span style="color:var(--t3)">×${v}</span></span>`).join('');
+
+    const comp_html = (d.competitor_mentions||[]).length ?
+      d.competitor_mentions.map(([n,c]) => `<span class="kw-pill">🏆 ${n} <span style="color:var(--t3)">×${c}</span></span>`).join('') :
+      '<span style="color:var(--t3);font-size:12px">None detected</span>';
+
+    const pain_html = (d.top_pain_phrases||[]).map(p =>
+      `<div class="signal-item pain" style="margin-bottom:6px">${p}</div>`).join('');
+
+    const wtp_html = (d.top_wtp_phrases||[]).map(p =>
+      `<div class="signal-item wtp" style="margin-bottom:6px">${p}</div>`).join('');
+
+    document.getElementById('trend-results').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="side-block" style="height:fit-content">
+          <div class="side-hdr">Overview</div>
+          <div class="side-body">
+            <div class="side-row"><span class="sr-k">posts analyzed</span><span class="sr-v orange">${d.posts_analyzed}</span></div>
+            <div class="side-row"><span class="sr-k">total signals</span><span class="sr-v orange">${d.total_signals}</span></div>
+            <div class="side-row"><span class="sr-k">subreddits</span><span class="sr-v">${(d.subreddits||[]).join(', ')}</span></div>
+            ${d.audience_segments?.length ? `<div class="side-row"><span class="sr-k">audience</span><span class="sr-v green" style="font-size:10px">${d.audience_segments.join(' · ')}</span></div>` : ''}
+          </div>
+        </div>
+        <div class="side-block">
+          <div class="side-hdr">Signal Breakdown</div>
+          <div class="side-body">${sig_html}</div>
+        </div>
+      </div>
+      <div class="result-panel" style="margin-bottom:14px">
+        <div class="result-hdr"><span class="result-hdr-title">🏷️ Top Keywords & Phrases</span></div>
+        <div class="result-body"><div class="kw-cloud">${kw_html}</div></div>
+      </div>
+      <div class="result-panel" style="margin-bottom:14px">
+        <div class="result-hdr"><span class="result-hdr-title">🏆 Competitor / Tool Mentions</span></div>
+        <div class="result-body"><div class="kw-cloud">${comp_html}</div></div>
+      </div>
+      ${pain_html ? `<div class="result-panel" style="margin-bottom:14px">
+        <div class="result-hdr"><span class="result-hdr-title">💔 Top Pain Phrases</span></div>
+        <div class="result-body">${pain_html}</div>
+      </div>` : ''}
+      ${wtp_html ? `<div class="result-panel">
+        <div class="result-hdr"><span class="result-hdr-title">💰 WTP Signals</span></div>
+        <div class="result-body">${wtp_html}</div>
+      </div>` : ''}
+    `;
+    document.getElementById('trend-results').classList.remove('hidden');
+  } catch(e) { showToast('Error: '+e.message); }
+  finally {
+    btn.disabled = false; btn.textContent = '📊 Analyze Trends';
+    document.getElementById('trend-loading').classList.add('hidden');
+  }
+}
+</script>
+<div class="toast" id="toast"></div>
+<script src="/static/js/app.js"></script>
+</body></html>

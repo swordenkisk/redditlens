@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Subreddit Discovery — RedditLens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow+Condensed:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body><nav class="nav">
+  <a href="/" class="nav-logo"><div class="logo-r">R</div><div><span class="logo-name">Reddit</span><span class="logo-lens">Lens</span></div></a>
+  <div class="nav-links">
+    <a href="/" class="nl">Dashboard</a>
+    <a href="/post" class="nl">Post Analysis</a>
+    <a href="/scan" class="nl">Scan</a>
+    <a href="/batch" class="nl">Batch</a>
+    <a href="/reports" class="nl">Reports</a>
+    <a href="/discover" class="nl">Discover</a>
+    <a href="/trends" class="nl">Trends</a>
+    <a href="/persona" class="nl">Persona</a>
+    <a href="https://github.com/swordenkisk/redditlens" class="nl nl-gh" target="_blank">GitHub 🇩🇿</a>
+  </div>
+</nav>
+<section class="hero" style="padding:44px 24px 32px">
+  <div class="hero-eyebrow">Hidden Gem Subreddit Discovery</div>
+  <h1 class="hero-title" style="font-size:clamp(28px,4vw,52px)">Find <span class="hero-accent">Hidden</span> Communities</h1>
+  <p class="hero-sub" style="margin-bottom:0">Small subreddits (1k–50k members) with high activity ratios are treasure troves. People share real needs without social pressure.</p>
+</section>
+
+<section class="sec">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:900px">
+
+    <!-- Search by keyword -->
+    <div>
+      <div class="sec-hdr" style="margin-bottom:14px"><span class="sec-title">🔍 Search by Keyword</span></div>
+      <div class="form-block">
+        <div class="input-strip">
+          <span class="input-strip-pre">keyword</span>
+          <input class="main-input" id="disc-query" placeholder="productivity, automation, saas..."/>
+          <button class="go-btn" onclick="discoverSearch()">Find →</button>
+        </div>
+      </div>
+      <div id="disc-loading" class="hidden" style="margin-top:10px;font-size:12px;color:var(--t2)"><span class="spinner"></span> Searching...</div>
+      <div id="disc-results" style="margin-top:14px"></div>
+    </div>
+
+    <!-- Browse by niche -->
+    <div>
+      <div class="sec-hdr" style="margin-bottom:14px"><span class="sec-title">📂 Browse by Niche</span></div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        {% for niche in niches %}
+        <button onclick="loadNiche('{{ niche }}')" class="btn btn-ghost" style="text-align:left;justify-content:flex-start">
+          {{ {"saas":"💻","freelance":"💼","ecommerce":"🛒","creators":"🎬","productivity":"⚡","dev_tools":"🔧","finance":"💰","health":"🏥","ai_ml":"🤖","remote_work":"🌍"}.get(niche,"📁") }}
+          {{ niche.replace("_"," ").title() }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div id="niche-results" style="margin-top:28px"></div>
+</section>
+
+<section class="sec" style="background:var(--bg2);border-top:1px solid var(--b1)">
+  <div class="sec-hdr"><span class="sec-title">🔥 High-Signal Subreddits (Curated)</span></div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px">
+    {% set pain_subs = ["Entrepreneur","smallbusiness","startups","SaaS","freelance","cscareerquestions","personalfinance","productivity","ADHD","webdev","ecommerce","shopify","marketing","copywriting","digitalnomad"] %}
+    {% for s in pain_subs %}
+    <a href="/scan?sub={{ s }}" class="qt" style="font-size:12px">r/{{ s }}</a>
+    {% endfor %}
+  </div>
+</section>
+
+<script>
+async function discoverSearch() {
+  const q = document.getElementById('disc-query').value.trim();
+  if (!q) return;
+  document.getElementById('disc-loading').classList.remove('hidden');
+  document.getElementById('disc-results').innerHTML = '';
+  try {
+    const r = await fetch('/api/discover/search', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({query:q, limit:15})
+    });
+    const data = await r.json();
+    if (data.error) { showToast('Error: '+data.error); return; }
+    document.getElementById('disc-results').innerHTML = renderSubList(data);
+  } catch(e) { showToast('Error: '+e.message); }
+  finally { document.getElementById('disc-loading').classList.add('hidden'); }
+}
+
+async function loadNiche(niche) {
+  const r    = await fetch(`/api/discover/niche/${niche}`);
+  const data = await r.json();
+  const html = `<div class="sec-hdr" style="margin-bottom:14px"><span class="sec-title">${niche.replace('_',' ').toUpperCase()} subreddits</span></div>`
+    + (data.subreddits||[]).map(s =>
+      `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg3);border-bottom:1px solid var(--b1)">
+        <span style="font-family:var(--mono);font-size:13px">r/${s}</span>
+        <div style="display:flex;gap:6px">
+          <a href="/scan?sub=${s}" class="btn btn-ghost btn-sm">Scan</a>
+          <a href="https://reddit.com/r/${s}" target="_blank" class="btn btn-ghost btn-sm">Reddit ↗</a>
+        </div>
+      </div>`).join('');
+  document.getElementById('niche-results').innerHTML = html;
+  document.getElementById('niche-results').scrollIntoView({behavior:'smooth'});
+}
+
+function renderSubList(subs) {
+  if (!subs.length) return '<div style="color:var(--t3);font-size:12px">No results found</div>';
+  return subs.map(s => `
+    <div style="padding:10px 0;border-bottom:1px solid var(--b1);display:flex;align-items:flex-start;gap:10px">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;margin-bottom:2px">r/${s.name} 
+          <span style="font-size:11px;background:rgba(255,107,53,${s.gem_score/100});color:var(--acc);padding:1px 6px;border-radius:2px;margin-left:6px">${Math.round(s.gem_score)} gem</span>
+        </div>
+        <div style="font-size:11px;color:var(--t2);margin-bottom:3px">${s.title||''}</div>
+        <div style="font-size:11px;color:var(--t3)">${(s.subscribers||0).toLocaleString()} members · ${s.active_users||0} active · ratio: ${(s.activity_ratio||0).toFixed(1)}</div>
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        <a href="/scan?sub=${s.name}" class="btn btn-ghost btn-sm">Scan</a>
+        <a href="https://reddit.com${s.url}" target="_blank" class="btn btn-ghost btn-sm">↗</a>
+      </div>
+    </div>`).join('');
+}
+
+document.getElementById('disc-query').addEventListener('keydown', e => {
+  if (e.key === 'Enter') discoverSearch();
+});
+</script>
+<div class="toast" id="toast"></div>
+<script src="/static/js/app.js"></script>
+</body></html>

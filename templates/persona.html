@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Customer Persona — RedditLens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow+Condensed:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body><nav class="nav">
+  <a href="/" class="nav-logo"><div class="logo-r">R</div><div><span class="logo-name">Reddit</span><span class="logo-lens">Lens</span></div></a>
+  <div class="nav-links">
+    <a href="/" class="nl">Dashboard</a>
+    <a href="/post" class="nl">Post Analysis</a>
+    <a href="/scan" class="nl">Scan</a>
+    <a href="/batch" class="nl">Batch</a>
+    <a href="/reports" class="nl">Reports</a>
+    <a href="/discover" class="nl">Discover</a>
+    <a href="/trends" class="nl">Trends</a>
+    <a href="/persona" class="nl">Persona</a>
+    <a href="https://github.com/swordenkisk/redditlens" class="nl nl-gh" target="_blank">GitHub 🇩🇿</a>
+  </div>
+</nav>
+<section class="hero" style="padding:44px 24px 32px">
+  <div class="hero-eyebrow">AI-Free Customer Persona Builder</div>
+  <h1 class="hero-title" style="font-size:clamp(28px,4vw,52px)">Who Is Your <span class="hero-accent">Customer?</span></h1>
+  <p class="hero-sub" style="margin-bottom:0">Extract real customer personas from Reddit communities. Roles, budgets, frustrations, goals — from actual posts, not guesses.</p>
+</section>
+
+<section class="sec">
+  <div style="max-width:640px">
+    <div class="form-block">
+      <label class="form-label">Subreddits (up to 3, one per line)</label>
+      <textarea class="form-textarea" id="persona-subs" rows="3" placeholder="SaaS&#10;startups&#10;Entrepreneur"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-block">
+        <label class="form-label">Sort</label>
+        <select class="form-select" id="persona-sort">
+          <option value="hot">Hot</option><option value="top">Top</option><option value="new">New</option>
+        </select>
+      </div>
+      <div class="form-block">
+        <label class="form-label">Posts per subreddit</label>
+        <select class="form-select" id="persona-limit">
+          <option value="10">10</option><option value="20" selected>20</option><option value="30">30</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-acc btn-lg" id="persona-btn" onclick="buildPersona()">👤 Build Persona</button>
+    <div class="hidden" id="persona-loading" style="margin-top:14px">
+      <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--t2)"><span class="spinner"></span> Building persona from community data...</div>
+    </div>
+  </div>
+
+  <div class="hidden fade" id="persona-result" style="margin-top:32px;max-width:800px"></div>
+</section>
+
+<script>
+async function buildPersona() {
+  const subs  = document.getElementById('persona-subs').value.split('
+').map(s=>s.trim().replace(/^r\//,'')).filter(Boolean);
+  const sort  = document.getElementById('persona-sort').value;
+  const limit = document.getElementById('persona-limit').value;
+  if (!subs.length) { showToast('Enter at least one subreddit'); return; }
+
+  const btn = document.getElementById('persona-btn');
+  btn.disabled = true; btn.textContent = '⏳ Building...';
+  document.getElementById('persona-loading').classList.remove('hidden');
+  document.getElementById('persona-result').classList.add('hidden');
+
+  try {
+    const r = await fetch('/api/persona', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({subreddits:subs, sort, limit:+limit})
+    });
+    const d = await r.json();
+    if (d.error) { showToast('Error: '+d.error); return; }
+
+    const role_chips = (d.roles||[]).map(r => `<span class="kw-pill" style="color:var(--acc)">${r}</span>`).join('');
+    const tool_chips = (d.tools_used||[]).map(t => `<span class="kw-pill">${t}</span>`).join('');
+    const frus_items = (d.frustrations||[]).map(f => `<div class="signal-item pain" style="margin-bottom:6px">⚡ ${f}</div>`).join('');
+    const goal_items = (d.goals||[]).map(g => `<div class="signal-item gap" style="margin-bottom:6px">🎯 ${g}</div>`).join('');
+    const kw_chips   = (d.keywords||[]).map(k => `<span class="kw-pill">${k}</span>`).join('');
+    const quotes     = (d.sample_quotes||[]).map(q => `<div style="padding:10px 14px;border-left:2px solid var(--gap);background:var(--bg3);border-radius:0 4px 4px 0;font-size:12px;color:var(--t2);margin-bottom:8px;line-height:1.6">"${q}"</div>`).join('');
+
+    document.getElementById('persona-result').innerHTML = `
+      <div style="background:var(--bg2);border:1px solid var(--acc);border-radius:4px;padding:20px;margin-bottom:20px">
+        <div style="font-family:var(--sans);font-size:13px;font-weight:700;color:var(--acc);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Persona Summary</div>
+        <div style="font-size:14px;color:var(--t1);line-height:1.7">${d.summary||''}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:8px;font-family:var(--mono)">Built from ${d.post_count} posts</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="side-block">
+          <div class="side-hdr">Profile</div>
+          <div class="side-body">
+            <div class="side-row"><span class="sr-k">roles</span><span class="sr-v">${(d.roles||[]).join(', ')}</span></div>
+            <div class="side-row"><span class="sr-k">experience</span><span class="sr-v orange">${d.experience_level}</span></div>
+            <div class="side-row"><span class="sr-k">budget</span><span class="sr-v green">${d.budget_range}</span></div>
+          </div>
+        </div>
+        <div class="side-block">
+          <div class="side-hdr">Tools Used</div>
+          <div class="side-body"><div class="kw-cloud">${tool_chips || '<span style="color:var(--t3);font-size:12px">None detected</span>'}</div></div>
+        </div>
+      </div>
+      ${frus_items ? `<div class="result-panel" style="margin-bottom:14px">
+        <div class="result-hdr"><span class="result-hdr-title">💔 Frustrations</span></div>
+        <div class="result-body">${frus_items}</div>
+      </div>` : ''}
+      ${goal_items ? `<div class="result-panel" style="margin-bottom:14px">
+        <div class="result-hdr"><span class="result-hdr-title">🎯 Goals & Jobs-to-be-Done</span></div>
+        <div class="result-body">${goal_items}</div>
+      </div>` : ''}
+      <div class="result-panel" style="margin-bottom:14px">
+        <div class="result-hdr"><span class="result-hdr-title">🏷️ Keywords They Use</span></div>
+        <div class="result-body"><div class="kw-cloud">${kw_chips}</div></div>
+      </div>
+      ${quotes ? `<div class="result-panel">
+        <div class="result-hdr"><span class="result-hdr-title">💬 Sample Quotes</span></div>
+        <div class="result-body">${quotes}</div>
+      </div>` : ''}
+    `;
+    document.getElementById('persona-result').classList.remove('hidden');
+  } catch(e) { showToast('Error: '+e.message); }
+  finally {
+    btn.disabled = false; btn.textContent = '👤 Build Persona';
+    document.getElementById('persona-loading').classList.add('hidden');
+  }
+}
+</script>
+<div class="toast" id="toast"></div>
+<script src="/static/js/app.js"></script>
+</body></html>

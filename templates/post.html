@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Post Analysis — RedditLens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow+Condensed:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body><nav class="nav">
+  <a href="/" class="nav-logo"><div class="logo-r">R</div><div><span class="logo-name">Reddit</span><span class="logo-lens">Lens</span></div></a>
+  <div class="nav-links">
+    <a href="/" class="nl">Dashboard</a>
+    <a href="/post" class="nl">Post Analysis</a>
+    <a href="/scan" class="nl">Subreddit Scan</a>
+    <a href="/batch" class="nl">Batch Scan</a>
+    <a href="/reports" class="nl">Reports</a>
+    <a href="/discover" class="nl">Discover</a>
+    <a href="/trends" class="nl">Trends</a>
+    <a href="/persona" class="nl">Persona</a>
+    <a href="https://github.com/swordenkisk/redditlens" class="nl nl-gh" target="_blank">GitHub 🇩🇿</a>
+  </div>
+</nav>
+<section class="hero" style="padding:44px 24px 32px">
+  <div class="hero-eyebrow">Single Post Deep Analyzer</div>
+  <h1 class="hero-title" style="font-size:clamp(28px,4vw,48px)">Analyze Any <span class="hero-accent">Reddit Post</span></h1>
+  <p class="hero-sub" style="margin-bottom:0">Paste any Reddit URL — the tool fetches the full thread including all nested comments and runs complete signal extraction.</p>
+</section>
+<section class="sec">
+  <div style="max-width:720px">
+    <div class="form-block">
+      <label class="form-label">Reddit Post URL</label>
+      <div class="input-strip">
+        <span class="input-strip-pre">URL</span>
+        <input class="main-input" id="post-url" placeholder="https://reddit.com/r/startups/comments/abc123/..."/>
+        <button class="go-btn" onclick="analyzePost()">Analyze →</button>
+      </div>
+      <div class="hint">Or paste just the post URL — /.json will be added automatically</div>
+    </div>
+    <div class="form-block">
+      <label class="form-label">Comment Depth Limit</label>
+      <select class="form-select" id="comment-limit" style="max-width:200px">
+        <option value="50">50 comments</option>
+        <option value="100" selected>100 comments</option>
+        <option value="200">200 comments</option>
+      </select>
+    </div>
+    {% if llm_ready %}<span class="llm-badge llm-on">● AI Enhanced</span>{% else %}<span class="llm-badge llm-off">○ AI off – <a href="/" style="color:var(--acc)">configure</a> for deep insights</span>{% endif %}
+
+    <div class="hidden" id="post-loading" style="margin-top:20px">
+      <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--t2)">
+        <span class="spinner"></span> Fetching post + comments...
+      </div>
+    </div>
+  </div>
+
+  <div class="hidden fade" id="post-result" style="margin-top:28px"></div>
+</section>
+<div class="toast" id="toast"></div>
+<script src="/static/js/app.js"></script>
+</body></html>

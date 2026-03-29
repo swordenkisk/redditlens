@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Subreddit Scanner — RedditLens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow+Condensed:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body><nav class="nav">
+  <a href="/" class="nav-logo"><div class="logo-r">R</div><div><span class="logo-name">Reddit</span><span class="logo-lens">Lens</span></div></a>
+  <div class="nav-links">
+    <a href="/" class="nl">Dashboard</a>
+    <a href="/post" class="nl">Post Analysis</a>
+    <a href="/scan" class="nl">Subreddit Scan</a>
+    <a href="/batch" class="nl">Batch Scan</a>
+    <a href="/reports" class="nl">Reports</a>
+    <a href="/discover" class="nl">Discover</a>
+    <a href="/trends" class="nl">Trends</a>
+    <a href="/persona" class="nl">Persona</a>
+    <a href="https://github.com/swordenkisk/redditlens" class="nl nl-gh" target="_blank">GitHub 🇩🇿</a>
+  </div>
+</nav>
+<section class="hero" style="padding:44px 24px 32px">
+  <div class="hero-eyebrow">Subreddit Intelligence Scanner</div>
+  <h1 class="hero-title" style="font-size:clamp(28px,4vw,48px)">Scan Any <span class="hero-accent">Subreddit</span></h1>
+  <p class="hero-sub" style="margin-bottom:0">Fetch top posts and automatically rank them by opportunity score, signal density, and engagement.</p>
+</section>
+<section class="sec">
+  <div style="max-width:640px">
+    <div class="form-block">
+      <label class="form-label">Subreddit</label>
+      <div class="input-strip">
+        <span class="input-strip-pre">reddit.com/r/</span>
+        <input class="main-input" id="sub-input" placeholder="smallbusiness, SaaS, startups..." id="sub-input"/>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        {% for s in ['smallbusiness','SaaS','startups','Entrepreneur','freelance','webdev','marketing','fintech'] %}
+        <span class="qt" onclick="document.getElementById('sub-input').value='{{s}}'">r/{{s}}</span>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-block">
+        <label class="form-label">Sort</label>
+        <select class="form-select" id="sort-sel">
+          <option value="hot">Hot</option>
+          <option value="new">New</option>
+          <option value="top">Top</option>
+          <option value="rising">Rising</option>
+        </select>
+      </div>
+      <div class="form-block">
+        <label class="form-label">Number of Posts</label>
+        <select class="form-select" id="limit-sel">
+          <option value="10">10</option>
+          <option value="25" selected>25</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-block">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--t2)">
+        <input type="checkbox" id="fetch-cmts" checked style="accent-color:var(--acc)"/>
+        Fetch full comment trees for top 5 posts (recommended, slower)
+      </label>
+    </div>
+    <button class="btn btn-acc btn-lg" id="scan-btn" onclick="startScan()">⚡ Start Scan</button>
+    {% if llm_ready %}<span class="llm-badge llm-on" style="margin-left:10px">● AI Enhanced</span>{% else %}<span class="llm-badge llm-off" style="margin-left:10px">○ Configure AI for deeper analysis</span>{% endif %}
+
+    <div class="hidden" id="scan-progress" style="margin-top:20px">
+      <div style="font-size:12px;color:var(--t2);margin-bottom:8px" id="scan-status">Scanning...</div>
+      <div class="progress-bar-wrap"><div class="progress-bar" id="scan-bar" style="width:30%"></div></div>
+    </div>
+  </div>
+
+  <div class="hidden fade" id="scan-results" style="margin-top:28px">
+    <div class="sec-hdr"><span class="sec-title" id="results-title">Results</span></div>
+    <div class="opp-grid" id="results-grid"></div>
+  </div>
+</section>
+<div class="toast" id="toast"></div>
+<script src="/static/js/app.js"></script>
+</body></html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>{{ report.post_title[:50] }} — RedditLens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow+Condensed:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body><nav class="nav">
+  <a href="/" class="nav-logo"><div class="logo-r">R</div><div><span class="logo-name">Reddit</span><span class="logo-lens">Lens</span></div></a>
+  <div class="nav-links">
+    <a href="/" class="nl">Dashboard</a>
+    <a href="/post" class="nl">Post Analysis</a>
+    <a href="/scan" class="nl">Subreddit Scan</a>
+    <a href="/batch" class="nl">Batch Scan</a>
+    <a href="/reports" class="nl">Reports</a>
+    <a href="/discover" class="nl">Discover</a>
+    <a href="/trends" class="nl">Trends</a>
+    <a href="/persona" class="nl">Persona</a>
+    <a href="https://github.com/swordenkisk/redditlens" class="nl nl-gh" target="_blank">GitHub 🇩🇿</a>
+  </div>
+</nav>
+<div style="padding:28px 24px 64px;max-width:1300px;margin:0 auto">
+  <div style="font-size:11px;color:var(--t3);margin-bottom:16px;font-family:var(--mono)">
+    <a href="/" style="color:var(--acc)">Home</a> /
+    <a href="/reports" style="color:var(--acc)">Reports</a> /
+    {{ report.post_title[:50] }}
+  </div>
+
+  <div class="detail-grid">
+    <div class="detail-sidebar">
+      <div class="side-block">
+        <div class="side-hdr">Opportunity Score</div>
+        <div class="side-body">
+          {% set score=report.opportunity_score %}
+          {% set col='var(--pain)' if score>=60 else ('var(--urgency)' if score>=30 else 'var(--t3)') %}
+          <div class="score-display">
+            <div class="score-big" style="color:{{col}}">{{ score|int }}</div>
+            <div class="score-sub">/100</div>
+          </div>
+          <div class="score-bar"><div class="score-fill" style="width:{{score}}%;background:{{col}}"></div></div>
+        </div>
+      </div>
+      <div class="side-block">
+        <div class="side-hdr">Post Stats</div>
+        <div class="side-body">
+          <div class="side-row"><span class="sr-k">subreddit</span><span class="sr-v orange">r/{{ report.subreddit }}</span></div>
+          <div class="side-row"><span class="sr-k">upvotes</span><span class="sr-v">{{ report.score }}</span></div>
+          <div class="side-row"><span class="sr-k">comments</span><span class="sr-v">{{ report.num_comments }}</span></div>
+          <div class="side-row"><span class="sr-k">signals</span><span class="sr-v orange">{{ report.signal_count }}</span></div>
+        </div>
+      </div>
+      <div class="side-block">
+        <div class="side-hdr">Actions</div>
+        <div class="side-body" style="display:flex;flex-direction:column;gap:6px">
+          <a href="{{ report.url }}" target="_blank" class="btn btn-acc">Open on Reddit ↗</a>
+          <a href="/api/export/{{ report.id }}/md" class="btn btn-ghost">Export Markdown</a>
+          <a href="/api/export/{{ report.id }}/json" class="btn btn-ghost">Export JSON</a>
+          <a href="/api/export/{{ report.id }}/csv" class="btn btn-ghost">Export CSV</a>
+          <button class="btn btn-danger" onclick="deleteAndGo('{{report.id}}')">Delete Report</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h1 style="font-family:var(--sans);font-size:22px;font-weight:700;margin-bottom:6px;line-height:1.3">{{ report.post_title }}</h1>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:20px">{{ report.summary }}</div>
+
+      {% if report.pain_points %}
+      <div class="result-panel">
+        <div class="result-hdr"><span class="result-hdr-title">💔 Pain Points ({{ report.pain_points|length }})</span></div>
+        <div class="result-body">
+          <div class="signal-list">
+            {% for pp in report.pain_points %}
+            <div class="signal-item pain">{{ pp }}</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if report.wtp_signals %}
+      <div class="result-panel" style="margin-top:14px">
+        <div class="result-hdr"><span class="result-hdr-title">💰 Willingness to Pay Signals</span></div>
+        <div class="result-body">
+          <div class="signal-list">
+            {% for w in report.wtp_signals %}
+            <div class="signal-item wtp">{{ w }}</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if report.gaps %}
+      <div class="result-panel" style="margin-top:14px">
+        <div class="result-hdr"><span class="result-hdr-title">🔍 Market Gaps Detected</span></div>
+        <div class="result-body">
+          <div class="signal-list">
+            {% for g in report.gaps %}
+            <div class="signal-item gap">{{ g }}</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if report.top_keywords %}
+      <div class="result-panel" style="margin-top:14px">
+        <div class="result-hdr"><span class="result-hdr-title">🏷️ Top Keywords</span></div>
+        <div class="result-body">
+          <div class="kw-cloud">
+            {% for kw, freq in report.top_keywords[:15] %}
+            <a href="/search?q={{ kw }}" class="kw-pill">{{ kw }} <span style="color:var(--t3)">×{{ freq }}</span></a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if report.signals %}
+      <div class="result-panel" style="margin-top:14px">
+        <div class="result-hdr"><span class="result-hdr-title">📡 All Signals ({{ report.signals|length }})</span></div>
+        <div class="result-body">
+          <div class="signal-list">
+            {% for s in report.signals[:20] %}
+            <div class="signal-item {{ s.category }}">
+              <span class="sig-chip sig-{{ s.category }}" style="margin-bottom:5px;display:inline-block">{{ s.emoji }} {{ s.category }}</span>
+              {{ s.context[:180] }}
+              <div class="signal-meta">{{ s.source }} · score: {{ s.score }}</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+<script>
+async function deleteAndGo(id) {
+  await fetch(`/api/report/${id}`,{method:'DELETE'});
+  window.location='/reports';
+}
+</script>
+<div class="toast" id="toast"></div>
+<script src="/static/js/app.js"></script>
+</body></html>

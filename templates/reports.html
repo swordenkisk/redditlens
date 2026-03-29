@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Reports — RedditLens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow+Condensed:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body><nav class="nav">
+  <a href="/" class="nav-logo"><div class="logo-r">R</div><div><span class="logo-name">Reddit</span><span class="logo-lens">Lens</span></div></a>
+  <div class="nav-links">
+    <a href="/" class="nl">Dashboard</a>
+    <a href="/post" class="nl">Post Analysis</a>
+    <a href="/scan" class="nl">Subreddit Scan</a>
+    <a href="/batch" class="nl">Batch Scan</a>
+    <a href="/reports" class="nl">Reports</a>
+    <a href="/discover" class="nl">Discover</a>
+    <a href="/trends" class="nl">Trends</a>
+    <a href="/persona" class="nl">Persona</a>
+    <a href="https://github.com/swordenkisk/redditlens" class="nl nl-gh" target="_blank">GitHub 🇩🇿</a>
+  </div>
+</nav>
+<section class="sec">
+  <div class="sec-hdr">
+    <span class="sec-title">📊 Saved Reports ({{ reports|length }})</span>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="exportAll()">Export All JSON</button>
+    </div>
+  </div>
+  {% if reports %}
+  <div style="display:flex;flex-direction:column;gap:1px;background:var(--b1);border:1px solid var(--b1)">
+    {% for r in reports %}
+    {% set score=r.opportunity_score %}
+    {% set col='var(--pain)' if score>=60 else ('var(--urgency)' if score>=30 else 'var(--t3)') %}
+    <div style="background:var(--bg2);padding:16px 20px;display:flex;align-items:center;gap:16px;transition:.15s" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='var(--bg2)'">
+      <div style="font-family:var(--sans);font-size:22px;font-weight:800;color:{{col}};min-width:50px">{{ score|int }}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:var(--sans);font-weight:600;font-size:14px;margin-bottom:3px">{{ r.post_title[:80] }}</div>
+        <div style="font-size:11px;color:var(--t3)">r/{{ r.subreddit }} · 👍 {{ r.score }} · 💬 {{ r.num_comments }}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <a href="/report/{{ r.id }}" class="btn btn-ghost btn-sm">View</a>
+        <a href="{{ r.url }}" target="_blank" class="btn btn-ghost btn-sm">Reddit ↗</a>
+        <a href="/api/export/{{ r.id }}/md" class="btn btn-ghost btn-sm">MD</a>
+        <a href="/api/export/{{ r.id }}/csv" class="btn btn-ghost btn-sm">CSV</a>
+        <button class="btn btn-danger btn-sm" onclick="deleteReport('{{ r.id }}', this)">✕</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:60px;color:var(--t3)">No reports yet — scan a subreddit or analyze a post to generate reports</div>
+  {% endif %}
+</section>
+<script>
+async function deleteReport(id, btn) {
+  await fetch(`/api/report/${id}`,{method:'DELETE'});
+  btn.closest('div[style]').remove();
+  showToast('Report deleted');
+}
+function exportAll() {
+  window.open('/api/reports');
+}
+</script>
+<div class="toast" id="toast"></div>
+<script src="/static/js/app.js"></script>
+</body></html>

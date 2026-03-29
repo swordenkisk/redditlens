@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Batch Scan — RedditLens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow+Condensed:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body><nav class="nav">
+  <a href="/" class="nav-logo"><div class="logo-r">R</div><div><span class="logo-name">Reddit</span><span class="logo-lens">Lens</span></div></a>
+  <div class="nav-links">
+    <a href="/" class="nl">Dashboard</a>
+    <a href="/post" class="nl">Post Analysis</a>
+    <a href="/scan" class="nl">Subreddit Scan</a>
+    <a href="/batch" class="nl">Batch Scan</a>
+    <a href="/reports" class="nl">Reports</a>
+    <a href="/discover" class="nl">Discover</a>
+    <a href="/trends" class="nl">Trends</a>
+    <a href="/persona" class="nl">Persona</a>
+    <a href="https://github.com/swordenkisk/redditlens" class="nl nl-gh" target="_blank">GitHub 🇩🇿</a>
+  </div>
+</nav>
+<section class="hero" style="padding:44px 24px 32px">
+  <div class="hero-eyebrow">Multi-Subreddit Batch Scanner</div>
+  <h1 class="hero-title" style="font-size:clamp(28px,4vw,48px)">Batch <span class="hero-accent">Intelligence</span> Scan</h1>
+  <p class="hero-sub" style="margin-bottom:0">Scan up to 10 subreddits simultaneously and get a ranked list of the best opportunities across all communities.</p>
+</section>
+<section class="sec">
+  <div style="max-width:640px">
+    <div class="form-block">
+      <label class="form-label">Subreddits (one per line, max 10)</label>
+      <textarea class="form-textarea" id="batch-subs" rows="6" placeholder="smallbusiness&#10;SaaS&#10;startups&#10;Entrepreneur&#10;freelance"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-block">
+        <label class="form-label">Sort</label>
+        <select class="form-select" id="batch-sort">
+          <option value="hot">Hot</option>
+          <option value="top">Top</option>
+          <option value="new">New</option>
+        </select>
+      </div>
+      <div class="form-block">
+        <label class="form-label">Posts per Subreddit</label>
+        <select class="form-select" id="batch-limit">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="25">25</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-block">
+      <label class="form-label">Minimum Opportunity Score</label>
+      <input class="form-input" id="batch-thresh" type="number" value="15" min="0" max="100" style="max-width:120px"/>
+    </div>
+    <button class="btn btn-acc btn-lg" id="batch-btn" onclick="startBatch()">🔍 Start Batch Scan</button>
+
+    <div class="hidden" id="batch-loading" style="margin-top:20px">
+      <div style="font-size:12px;color:var(--t2);margin-bottom:8px" id="batch-status">Scanning multiple subreddits...</div>
+      <div class="progress-bar-wrap"><div class="progress-bar" id="batch-bar" style="width:20%"></div></div>
+    </div>
+  </div>
+
+  <div class="hidden fade" id="batch-results" style="margin-top:28px">
+    <div class="sec-hdr"><span class="sec-title" id="batch-title">Batch Results</span></div>
+    <div class="opp-grid" id="batch-grid"></div>
+  </div>
+</section>
+<div class="toast" id="toast"></div>
+<script src="/static/js/app.js"></script>
+</body></html>
